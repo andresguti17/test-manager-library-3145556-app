@@ -11,19 +11,22 @@ function Login({ onLogin }) {
   const [password, setPassword] = useState('');
   const [e, setE] = useState(null);
   return (
-    <section>
-      <h2>Login</h2>
-      <Err e={e} />
-      <form onSubmit={async (ev) => {
-        ev.preventDefault(); setE(null);
-        try { onLogin(await api('/auth/login', { method: 'POST', body: { username, password } })); }
-        catch (err) { setE(err); }
-      }}>
-        <input placeholder="username" value={username} onChange={(ev) => setUsername(ev.target.value)} />
-        <input placeholder="password" type="password" value={password} onChange={(ev) => setPassword(ev.target.value)} />
-        <button type="submit">Enter</button>
-      </form>
-    </section>
+    <div className="login-wrap">
+      <section className="card login-card">
+        <h1>Manager Library</h1>
+        <p className="sub">Catalog, loans and reports for a small library.</p>
+        <Err e={e} />
+        <form onSubmit={async (ev) => {
+          ev.preventDefault(); setE(null);
+          try { onLogin(await api('/auth/login', { method: 'POST', body: { username, password } })); }
+          catch (err) { setE(err); }
+        }}>
+          <input placeholder="username" value={username} onChange={(ev) => setUsername(ev.target.value)} />
+          <input placeholder="password" type="password" value={password} onChange={(ev) => setPassword(ev.target.value)} />
+          <button type="submit">Enter</button>
+        </form>
+      </section>
+    </div>
   );
 }
 
@@ -39,27 +42,30 @@ function Books({ token, admin }) {
   };
   useEffect(() => { search(); }, []);
   return (
-    <section>
+    <section className="card">
       <h2>Catalog</h2>
       <Err e={e} />
       <div className="row">
         <input placeholder="title or author" value={q} onChange={(ev) => setQ(ev.target.value)} />
         <button onClick={search}>Search</button>
       </div>
-      <ul>
-        {items.map((b) => (
-          <li key={b.id}>
-            <strong>{b.title}</strong> — {b.author} ({b.isbn}) · {b.category?.name} ·
-            {' '}{b.available_copies}/{b.total_copies} available
-            {admin && (
-              <label> cover <input type="file" accept="image/jpeg,image/png" onChange={async (ev) => {
-                const f = ev.target.files[0]; if (!f) return;
-                try { await uploadCover(token, b.id, f); search(); } catch (err) { setE(err); }
-              }} /></label>
-            )}
-          </li>
-        ))}
-      </ul>
+      {items.length === 0 ? <p className="empty">No books found.</p> : (
+        <ul className="books">
+          {items.map((b) => (
+            <li key={b.id}>
+              <span className="stock">{b.available_copies}/{b.total_copies} available</span>
+              <span className="title">{b.title}</span>
+              <div className="meta">{b.author} · {b.isbn} · {b.category?.name}</div>
+              {admin && (
+                <label className="meta"> cover <input type="file" accept="image/jpeg,image/png" onChange={async (ev) => {
+                  const f = ev.target.files[0]; if (!f) return;
+                  try { await uploadCover(token, b.id, f); search(); } catch (err) { setE(err); }
+                }} /></label>
+              )}
+            </li>
+          ))}
+        </ul>
+      )}
       {admin && (
         <form onSubmit={async (ev) => {
           ev.preventDefault(); setE(null);
@@ -93,14 +99,14 @@ function Members({ token }) {
   };
   useEffect(() => { search(); }, []);
   return (
-    <section>
+    <section className="card">
       <h2>Members</h2>
       <Err e={e} />
       <div className="row">
         <input placeholder="name or document" value={q} onChange={(ev) => setQ(ev.target.value)} />
         <button onClick={search}>Search</button>
       </div>
-      <ul>{items.map((m) => <li key={m.id}>{m.full_name} — {m.document_number} ({m.active_loans ?? 0} open)</li>)}</ul>
+      <ul className="plain">{items.map((m) => <li key={m.id}>{m.full_name} — {m.document_number} ({m.active_loans ?? 0} open)</li>)}</ul>
       <form onSubmit={async (ev) => {
         ev.preventDefault(); setE(null);
         try { await api('/members', { token, method: 'POST', body: form }); setForm({ full_name: '', document_number: '' }); search(); }
@@ -134,7 +140,7 @@ function Loans({ token }) {
     catch (err) { setE(err); }
   };
   return (
-    <section>
+    <section className="card">
       <h2>Loans</h2>
       <Err e={e} />
       <form onSubmit={lend}>
@@ -150,10 +156,10 @@ function Loans({ token }) {
         <button type="submit">Open</button>
       </form>
       {detail?.items && (
-        <ul>{detail.items.map((it) => (
+        <ul className="plain">{detail.items.map((it) => (
           <li key={it.id}>
             {it.book_title} — due {it.due_at}{it.returned_at ? ` (returned ${it.returned_at})` : (
-              <button onClick={() => back(detail.id ?? detail.loan_id, it.id)}>Return</button>)}
+              <button className="link" onClick={() => back(detail.id ?? detail.loan_id, it.id)}>Return</button>)}
           </li>))}
         </ul>
       )}
@@ -166,12 +172,14 @@ function Overdue({ token }) {
   const [e, setE] = useState(null);
   useEffect(() => { api('/loans/overdue', { token }).then((r) => setItems(r.items)).catch(setE); }, []);
   return (
-    <section>
+    <section className="card">
       <h2>Overdue</h2>
       <Err e={e} />
-      <ul>{items.map((it) => (
-        <li key={it.item_id}>{it.book_title} — {it.member_name} — {it.days_late} days late</li>))}
-      </ul>
+      {items.length === 0 ? <p className="empty">Nothing overdue.</p> : (
+        <ul className="plain">{items.map((it) => (
+          <li key={it.item_id}>{it.book_title} — {it.member_name} — {it.days_late} days late</li>))}
+        </ul>
+      )}
     </section>
   );
 }
@@ -182,7 +190,7 @@ function Report({ token }) {
   const [rows, setRows] = useState([]);
   const [e, setE] = useState(null);
   return (
-    <section>
+    <section className="card">
       <h2>Most borrowed (admin)</h2>
       <Err e={e} />
       <form onSubmit={async (ev) => {
@@ -194,10 +202,12 @@ function Report({ token }) {
         <input type="date" value={to} onChange={(ev) => setTo(ev.target.value)} />
         <button type="submit">Run</button>
       </form>
-      <ul>{rows.map((r) => <li key={r.book_id}>{r.book_title} ({r.category_name}) — {r.times_borrowed}×</li>)}</ul>
+      <ul className="plain">{rows.map((r) => <li key={r.book_id}>{r.book_title} ({r.category_name}) — {r.times_borrowed}×</li>)}</ul>
     </section>
   );
 }
+
+const VIEWS = [['books', 'Catalog'], ['members', 'Members'], ['loans', 'Loans'], ['overdue', 'Overdue']];
 
 export default function App() {
   const [auth, setAuth] = useState(() => JSON.parse(localStorage.getItem('ml-auth') ?? 'null'));
@@ -207,22 +217,31 @@ export default function App() {
     localStorage.setItem('ml-auth', JSON.stringify(a)); setAuth(a);
   };
   const logout = () => { localStorage.removeItem('ml-auth'); setAuth(null); };
-  if (!auth) return <main><h1>Manager Library</h1><Login onLogin={login} /></main>;
+  if (!auth) return <main><Login onLogin={login} /></main>;
   const admin = auth.role === 'admin';
   return (
-    <main>
-      <nav className="row">
-        <strong>Manager Library</strong><span>{auth.role}</span>
-        {[['books', 'Catalog'], ['members', 'Members'], ['loans', 'Loans'], ['overdue', 'Overdue']]
-          .map(([k, l]) => <button key={k} onClick={() => setView(k)}>{l}</button>)}
-        {admin && <button onClick={() => setView('report')}>Report</button>}
-        <button onClick={logout}>Logout</button>
-      </nav>
-      {view === 'books' && <Books token={auth.token} admin={admin} />}
-      {view === 'members' && <Members token={auth.token} />}
-      {view === 'loans' && <Loans token={auth.token} />}
-      {view === 'overdue' && <Overdue token={auth.token} />}
-      {view === 'report' && admin && <Report token={auth.token} />}
-    </main>
+    <>
+      <header className="topbar">
+        <div className="topbar-inner">
+          <span className="brand">Manager Library</span>
+          <span className="role">{auth.role}</span>
+          <nav>
+            {VIEWS.map(([k, l]) => <button key={k} className={view === k ? 'active' : ''} onClick={() => setView(k)}>{l}</button>)}
+            {admin && <button className={view === 'report' ? 'active' : ''} onClick={() => setView('report')}>Report</button>}
+            <button className="logout" onClick={logout}>Logout</button>
+          </nav>
+        </div>
+      </header>
+      <main>
+        <div className="hero">
+          <h1>{VIEWS.find(([k]) => k === view)?.[1] ?? 'Report'}</h1>
+        </div>
+        {view === 'books' && <Books token={auth.token} admin={admin} />}
+        {view === 'members' && <Members token={auth.token} />}
+        {view === 'loans' && <Loans token={auth.token} />}
+        {view === 'overdue' && <Overdue token={auth.token} />}
+        {view === 'report' && admin && <Report token={auth.token} />}
+      </main>
+    </>
   );
 }

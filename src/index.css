@@ -1,0 +1,10 @@
+body { margin: 0; font-family: system-ui, sans-serif; background: #faf8f3; color: #1e1b16; }
+main { max-width: 56rem; margin: 0 auto; padding: 1.5rem; }
+nav.row, .row { display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap; margin-bottom: 1rem; }
+form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin: 1rem 0; }
+input, button { padding: 0.5rem 0.75rem; font-size: 1rem; }
+input { border: 1px solid #ccc; border-radius: 0.25rem; }
+button { cursor: pointer; }
+ul { padding-left: 1.25rem; }
+li { margin-bottom: 0.4rem; }
+.err { color: #a00; }
